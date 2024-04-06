@@ -6,13 +6,14 @@ import 'package:performance_timer/src/performance_timer_serializer.dart';
 typedef TraceEvent = Map<String, dynamic>;
 typedef TraceEvents = List<TraceEvent>;
 
-/// Serializes a root [PerformanceTimer] to [TraceEvents] format:
+/// Serializes a root [PerformanceTimer] to [TraceEvents] format, making it
+/// possible to analyze it using tools like Google's Perfetto.
+///
 /// https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview#heading=h.jh64i9l3vwa1
 ///
 /// This allows you to analyze the traces with several tools like
 /// https://ui.perfetto.dev/
-class PerformanceTimerSerializerTraceEvent
-    extends PerformanceTimerSerializer<TraceEvents> {
+class PerformanceTimerSerializerTraceEvent extends PerformanceTimerSerializer<TraceEvents> {
   const PerformanceTimerSerializerTraceEvent();
 
   @override

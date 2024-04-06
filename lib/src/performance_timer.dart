@@ -1,8 +1,7 @@
 import 'dart:collection';
 
-/// [PerformanceTimer] can be used to track
-/// time spent in method calls. It allows to track
-/// real or total time spent, and own time spent.
+/// Tracks time spent in method calls, including bot total and own time
+/// spent.
 ///
 /// Immediately after instantiation, both timers are started,
 /// and [realDuration] is only stopped when [finish] is called,
@@ -40,8 +39,7 @@ class PerformanceTimer {
   /// Moment which this timer has started, since root timer has been created.
   ///
   /// If this is the root timer, then time elapsed is zero.
-  Duration get relativeStartAt =>
-      isRoot ? Duration.zero : startAt.difference(root.startAt);
+  Duration get relativeStartAt => isRoot ? Duration.zero : startAt.difference(root.startAt);
   bool get isRoot => root == this;
 
   /// Time elapsed from start of this timer, until [finish] is called.
