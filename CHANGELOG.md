@@ -1,3 +1,7 @@
-## 1.0.0
+## 1.0.1 - 2024-04-06
+### Changed
+- Improvements on docs and styling
 
-- Initial version.
+## 1.0.0 - 2024-04-05
+### Added
+- Initial version
