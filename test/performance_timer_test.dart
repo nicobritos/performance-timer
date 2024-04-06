@@ -7,7 +7,8 @@ void main() {
   group('root timer', () {
     late PerformanceTimer timer;
     setUp(() {
-      timer = PerformanceTimer(name: 'root', tags: {'initialKey': 'initialValue'});
+      timer =
+          PerformanceTimer(name: 'root', tags: {'initialKey': 'initialValue'});
     });
 
     test('should have correct name', () {
@@ -46,7 +47,8 @@ void main() {
 
     test('should set tag', () {
       timer.setTag('key', 'value');
-      expect(timer.tags, equals({'key': 'value', 'initialKey': 'initialValue'}));
+      expect(
+          timer.tags, equals({'key': 'value', 'initialKey': 'initialValue'}));
     });
 
     test('should delete tag', () {

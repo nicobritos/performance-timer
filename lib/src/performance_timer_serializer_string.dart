@@ -5,7 +5,9 @@ import 'package:duration/duration.dart' as duration_helper show prettyDuration;
 import 'package:performance_timer/src/performance_timer.dart';
 import 'package:performance_timer/src/performance_timer_serializer.dart';
 
-class PerformanceTimerSerializerString extends PerformanceTimerSerializer<String> {
+/// Creates a String representation of a root [PerformanceTimer].
+class PerformanceTimerSerializerString
+    extends PerformanceTimerSerializer<String> {
   const PerformanceTimerSerializerString();
 
   @override
