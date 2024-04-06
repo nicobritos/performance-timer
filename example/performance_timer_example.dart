@@ -41,7 +41,8 @@ Future<void> main() async {
   // that's supported by many tracer analyzers, such as Google's Perfetto:
   // https://ui.perfetto.dev/
   final traceEventSerializer = const PerformanceTimerSerializerTraceEvent();
-  final serializedTrace = jsonEncode(await traceEventSerializer.serialize(rootTimer));
+  final serializedTrace =
+      jsonEncode(await traceEventSerializer.serialize(rootTimer));
   final file = File('./example_trace.json');
   file.openWrite();
   await file.writeAsString(serializedTrace);
