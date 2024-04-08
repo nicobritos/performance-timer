@@ -13,7 +13,8 @@ typedef TraceEvents = List<TraceEvent>;
 ///
 /// This allows you to analyze the traces with several tools like
 /// https://ui.perfetto.dev/
-class PerformanceTimerSerializerTraceEvent extends PerformanceTimerSerializer<TraceEvents> {
+class PerformanceTimerSerializerTraceEvent
+    extends PerformanceTimerSerializer<TraceEvents> {
   const PerformanceTimerSerializerTraceEvent();
 
   @override
@@ -38,7 +39,7 @@ class PerformanceTimerSerializerTraceEvent extends PerformanceTimerSerializer<Tr
   }
 
   TraceEvent _serializeTraceEvent(PerformanceTimer timer) {
-    return {
+    final data = {
       "name": timer.name,
       "ph": "X",
       "ts": timer.relativeStartAt.inMicroseconds,
@@ -50,5 +51,11 @@ class PerformanceTimerSerializerTraceEvent extends PerformanceTimerSerializer<Tr
         "ownTimeMs": timer.ownDuration.inMilliseconds,
       }
     };
+
+    if (timer.category != null) {
+      data["cat"] = timer.category!;
+    }
+
+    return data;
   }
 }

@@ -1,3 +1,7 @@
+## 1.0.3 - 2024-04-08
+### Added
+- category to timers
+
 ## 1.0.2 - 2024-04-06
 ### Changed
 - Improve documentation

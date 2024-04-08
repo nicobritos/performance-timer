@@ -14,13 +14,14 @@ import 'dart:collection';
 ///
 /// A [PerformanceTimer], once [finish]ed, cannot be started again.
 ///
-/// Each timer has a [name] that may be used to easily distinguish it
-/// when analyzing the results.
+/// Each timer has a [name] and [category] that may be used to easily
+/// distinguish it when analyzing the results.
 ///
 /// Also, the [root] timer may have [tags] set for the same purpose.
 /// However, child timers will have this map empty.
 class PerformanceTimer {
   final String name;
+  final String? category;
   final Map<String, String?> _tags;
   final List<PerformanceTimer> _children = [];
   final PerformanceTimer? parent;
@@ -39,7 +40,8 @@ class PerformanceTimer {
   /// Moment which this timer has started, since root timer has been created.
   ///
   /// If this is the root timer, then time elapsed is zero.
-  Duration get relativeStartAt => isRoot ? Duration.zero : startAt.difference(root.startAt);
+  Duration get relativeStartAt =>
+      isRoot ? Duration.zero : startAt.difference(root.startAt);
   bool get isRoot => root == this;
 
   /// Time elapsed from start of this timer, until [finish] is called.
@@ -54,6 +56,7 @@ class PerformanceTimer {
 
   PerformanceTimer._({
     required this.name,
+    required this.category,
     required Map<String, String?> tags,
     this.parent,
   }) : _tags = tags {
@@ -64,15 +67,20 @@ class PerformanceTimer {
     _ownStopwatch.start();
   }
 
-  /// Creates a timer with [name] and [tags].
+  /// Creates a timer with [name], [category] and [tags].
   ///
-  /// There is no limitation in [name] length.
+  /// There is no limitation in [name] nor [category] length.
   /// A new map is created based on [tags].
   factory PerformanceTimer({
     required String name,
+    String? category,
     Map<String, String>? tags,
   }) {
-    return PerformanceTimer._(name: name, tags: Map.of(tags ?? {}));
+    return PerformanceTimer._(
+      name: name,
+      category: category,
+      tags: Map.of(tags ?? {}),
+    );
   }
 
   /// Adds a new tag with corresponding values if [value] is not null,
@@ -93,9 +101,10 @@ class PerformanceTimer {
 
   /// Creates a new child timer with [name] and stores it in [children].
   ///
+  /// If [category] is null, then the parent's category is used.
   /// Automatically pauses the [ownDuration] of this timer,
   /// and starts both stopwatches of the created child.
-  PerformanceTimer child(String name) {
+  PerformanceTimer child(String name, {String? category}) {
     if (!running) {
       throw StateError('Timer already finished');
     }
@@ -103,7 +112,12 @@ class PerformanceTimer {
     // Don't count time spent on children as own
     _ownStopwatch.stop();
 
-    final newStep = PerformanceTimer._(name: name, tags: {}, parent: this);
+    final newStep = PerformanceTimer._(
+      name: name,
+      category: category ?? this.category,
+      tags: {},
+      parent: this,
+    );
     _children.add(newStep);
     return newStep;
   }

@@ -11,6 +11,7 @@ Future<void> main() async {
     tags: {
       'externalId': '12345',
     },
+    category: 'root',
   );
 
   // Wait for some calculations
@@ -29,10 +30,10 @@ Future<void> main() async {
   // externalId = 12345
   // result = 3
   //
-  // main - tot: 1s - own: 237ms
-  // + calculationA - tot: 215ms - own: 215ms
-  // + calculationB - tot: 546ms - own: 205ms
-  // ++ calculationB2 - tot: 341ms - own: 341ms
+  // main - tot: 985ms - own: 221ms - root
+  // + calculationA - tot: 204ms - own: 204ms - root
+  // + calculationB - tot: 558ms - own: 202ms - root
+  // ++ calculationB2 - tot: 356ms - own: 356ms - B2
   // -----------
   final stringSerializer = const PerformanceTimerSerializerString();
   print(await stringSerializer.serialize(rootTimer));
@@ -56,7 +57,7 @@ Future<void> calculationA(PerformanceTimer timer) async {
 
 Future<void> calculationB(PerformanceTimer timer) async {
   await Future.delayed(const Duration(milliseconds: 200));
-  await calculationB2(timer.child('calculationB2'));
+  await calculationB2(timer.child('calculationB2', category: 'B2'));
 
   timer.finish();
 }

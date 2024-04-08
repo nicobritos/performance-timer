@@ -7,12 +7,19 @@ void main() {
   group('root timer', () {
     late PerformanceTimer timer;
     setUp(() {
-      timer =
-          PerformanceTimer(name: 'root', tags: {'initialKey': 'initialValue'});
+      timer = PerformanceTimer(
+        name: 'root',
+        category: 'category',
+        tags: {'initialKey': 'initialValue'},
+      );
     });
 
     test('should have correct name', () {
       expect(timer.name, equals('root'));
+    });
+
+    test('should have correct category', () {
+      expect(timer.category, equals('category'));
     });
 
     test('should have correct tags', () {
@@ -105,6 +112,15 @@ void main() {
 
     test('should have correct name', () {
       expect(child.name, equals('child'));
+    });
+
+    test('should have parent\'s category', () {
+      expect(child.category, equals('category'));
+    });
+
+    test('should have own category', () {
+      final child2 = root.child('child', category: 'childCategory');
+      expect(child2.category, equals('childCategory'));
     });
 
     test('should have zero tags', () {
