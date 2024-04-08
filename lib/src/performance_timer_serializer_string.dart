@@ -42,8 +42,9 @@ class PerformanceTimerSerializerString
 
   void _serialize(PerformanceTimer timer, StringBuffer sb, int indent) {
     final indentStr = '+' * indent + (indent > 0 ? ' ' : '');
+    final categoryStr = timer.category != null ? ' - ${timer.category}' : '';
     sb.writeln(
-      '$indentStr${timer.name} - tot: ${_prettifyDuration(timer.realDuration)} - own: ${_prettifyDuration(timer.ownDuration)}',
+      '$indentStr${timer.name} - tot: ${_prettifyDuration(timer.realDuration)} - own: ${_prettifyDuration(timer.ownDuration)}$categoryStr',
     );
 
     for (final child in timer.children) {
