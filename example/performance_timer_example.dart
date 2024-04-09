@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:performance_timer/performance_timer.dart';
-import 'package:performance_timer/src/performance_timer_serializer_trace_event.dart';
 
 Future<void> main() async {
   final rootTimer = PerformanceTimer(
@@ -21,6 +20,14 @@ Future<void> main() async {
   await calculationB(rootTimer.child('calculationB'));
 
   await Future.delayed(const Duration(milliseconds: 100));
+
+  final result = await rootTimer.measure('measure', (child) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return child.measure('data', (_) => 1);
+  });
+
+  // 1
+  print(result);
 
   rootTimer.finish();
 

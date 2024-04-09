@@ -52,7 +52,8 @@ void main() {
 
     test('should set tag', () {
       timer.setTag('key', 'value');
-      expect(timer.tags, equals({'key': 'value', 'initialKey': 'initialValue'}));
+      expect(
+          timer.tags, equals({'key': 'value', 'initialKey': 'initialValue'}));
     });
 
     test('should delete tag', () {

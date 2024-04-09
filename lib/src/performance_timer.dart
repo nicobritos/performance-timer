@@ -129,7 +129,7 @@ class PerformanceTimer {
   /// [callback] completes or fails. If it fails, it rethrows the error.
   T measure<T>(
     String name,
-    MeasurableCallback callback, {
+    MeasurableCallback<T> callback, {
     String? category,
   }) {
     final childTimer = child(name, category: category);
