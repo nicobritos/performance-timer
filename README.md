@@ -18,7 +18,7 @@ Google Perfetto (https://ui.perfetto.dev/)
 
 * Create a timer
 ```dart
-final timer = PerformanceTimer(name: 'rootTimer', tags: {'key': 'value'});
+final timer = PerformanceTimer(name: 'rootTimer', category: 'category', tags: {'key': 'value'});
 // Do some work
 timer.finish();
 ```
@@ -31,6 +31,16 @@ final child = timer.child('childTimer');
 // ...
 // Stop timer and signal parent to resume `timer.ownDuration`.
 child.finish();
+```
+
+* Measure a callback
+```dart
+await timer.measure(
+  'childTimer',
+  () async {
+    // Do some work
+  },
+);
 ```
 
 * Add a tag

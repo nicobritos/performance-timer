@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+typedef MeasurableCallback<T> = T Function(PerformanceTimer timer);
+
 /// Tracks time spent in method calls, including bot total and own time
 /// spent.
 ///
@@ -40,8 +42,7 @@ class PerformanceTimer {
   /// Moment which this timer has started, since root timer has been created.
   ///
   /// If this is the root timer, then time elapsed is zero.
-  Duration get relativeStartAt =>
-      isRoot ? Duration.zero : startAt.difference(root.startAt);
+  Duration get relativeStartAt => isRoot ? Duration.zero : startAt.difference(root.startAt);
   bool get isRoot => root == this;
 
   /// Time elapsed from start of this timer, until [finish] is called.
@@ -120,6 +121,35 @@ class PerformanceTimer {
     );
     _children.add(newStep);
     return newStep;
+  }
+
+  /// Creates a new child timer as [child] to measure time spent in the
+  /// [callback]. This child timer is automatically finished when the
+  /// [callback] completes or fails. If it fails, it rethrows the error.
+  T measure<T>(
+    String name,
+    MeasurableCallback callback, {
+    String? category,
+  }) {
+    final childTimer = child(name, category: category);
+
+    try {
+      final result = callback(childTimer);
+
+      if (result is Future) {
+        return result.whenComplete(() {
+          childTimer.finish();
+        }) as T;
+      } else {
+        childTimer.finish();
+        return result;
+      }
+    } catch (_) {
+      if (childTimer.running) {
+        childTimer.finish();
+      }
+      rethrow;
+    }
   }
 
   /// Stops all stopwatches ([ownDuration] and [realDuration]).
