@@ -1,3 +1,7 @@
+## 1.0.5 - 2024-04-09
+### Fixed
+- measure callback return type
+
 ## 1.0.4 - 2024-04-09
 ### Added
 - measure callback
