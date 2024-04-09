@@ -44,8 +44,8 @@ void main() {
       expect(timer.root, equals(timer));
     });
 
-    test('should have current isolate id', () {
-      expect(timer.threadId, equals(Isolate.current.controlPort.hashCode));
+    test('should have zero as thread id', () {
+      expect(timer.threadId, equals(0));
     });
 
     test('should not have parent', () {
@@ -54,8 +54,7 @@ void main() {
 
     test('should set tag', () {
       timer.setTag('key', 'value');
-      expect(
-          timer.tags, equals({'key': 'value', 'initialKey': 'initialValue'}));
+      expect(timer.tags, equals({'key': 'value', 'initialKey': 'initialValue'}));
     });
 
     test('should delete tag', () {
@@ -105,7 +104,7 @@ void main() {
   group('child timer', () {
     late PerformanceTimer root, child;
     setUp(() async {
-      root = PerformanceTimer(name: 'root');
+      root = PerformanceTimer(name: 'root', category: 'category');
       await Future.delayed(const Duration(milliseconds: 10));
       child = root.child('child');
     });
@@ -144,8 +143,8 @@ void main() {
       expect(child.isRoot, isFalse);
     });
 
-    test('should have current isolate id', () {
-      expect(child.threadId, equals(Isolate.current.controlPort.hashCode));
+    test('should have zero as thread id', () {
+      expect(child.threadId, equals(0));
       expect(child.threadId, equals(root.threadId));
     });
 
@@ -187,6 +186,95 @@ void main() {
       final ownDuration2 = root.ownDuration;
 
       expect(ownDuration1, lessThan(ownDuration2));
+    });
+  });
+
+  group('measure', () {
+    late PerformanceTimer root;
+    setUp(() async {
+      root = PerformanceTimer(name: 'root');
+    });
+
+    test('should call function', () {
+      var called = false;
+
+      root.measure('measure', (child) {
+        called = true;
+      });
+
+      expect(called, isTrue);
+    });
+
+    test('should finish timer with sync function', () {
+      PerformanceTimer? childTimer;
+
+      root.measure('measure', (child) {
+        childTimer = child;
+      });
+
+      expect(childTimer, isNotNull);
+      expect(childTimer!.running, isFalse);
+    });
+
+    test('should finish timer with sync function if error', () {
+      PerformanceTimer? childTimer;
+
+      try {
+        root.measure('measure', (child) {
+          childTimer = child;
+          throw Exception();
+        });
+      } catch (_) {}
+
+      expect(childTimer, isNotNull);
+      expect(childTimer!.running, isFalse);
+    });
+
+    test('should rethrow error with sync function', () {
+      expect(
+        () => root.measure('measure', (_) {
+          throw Exception();
+        }),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('should finish timer with async function', () async {
+      PerformanceTimer? childTimer;
+
+      await root.measure('measure', (child) async {
+        childTimer = child;
+        await Future.delayed(const Duration(milliseconds: 150));
+      });
+
+      expect(childTimer, isNotNull);
+      expect(childTimer!.running, isFalse);
+      expect(childTimer!.ownDuration.inMilliseconds, greaterThanOrEqualTo(150));
+    });
+
+    test('should finish timer with async function if error', () async {
+      PerformanceTimer? childTimer;
+
+      try {
+        await root.measure('measure', (child) async {
+          childTimer = child;
+          await Future.delayed(const Duration(milliseconds: 150));
+          throw Exception();
+        });
+      } catch (_) {}
+
+      expect(childTimer, isNotNull);
+      expect(childTimer!.running, isFalse);
+      expect(childTimer!.ownDuration.inMilliseconds, greaterThanOrEqualTo(150));
+    });
+
+    test('should rethrow error with async function', () async {
+      expect(
+        () async => await root.measure('measure', (_) async {
+          throw Exception();
+        }),
+        throwsA(isA<Exception>()),
+      );
     });
   });
 
