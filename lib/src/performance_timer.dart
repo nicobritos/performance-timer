@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+import 'package:meta/meta.dart';
+
 typedef MeasurableCallback<T> = T Function(PerformanceTimer timer);
 
 /// Tracks time spent in method calls, including bot total and own time
@@ -31,6 +33,8 @@ class PerformanceTimer {
   final DateTime startAt = DateTime.now();
   final Stopwatch _ownStopwatch = Stopwatch();
   final Stopwatch _realStopwatch = Stopwatch();
+  final String id;
+  int _maxId = 0;
 
   /// This is used in TraceEventFormat, but for now is zero.
   ///
@@ -59,6 +63,7 @@ class PerformanceTimer {
   PerformanceTimer._({
     required this.name,
     required this.category,
+    required this.id,
     required Map<String, String?> tags,
     this.parent,
   }) : _tags = tags {
@@ -80,6 +85,7 @@ class PerformanceTimer {
   }) {
     return PerformanceTimer._(
       name: name,
+      id: '0',
       category: category,
       tags: Map.of(tags ?? {}),
     );
@@ -116,6 +122,7 @@ class PerformanceTimer {
 
     final newStep = PerformanceTimer._(
       name: name,
+      id: nextId(),
       category: category ?? this.category,
       tags: {},
       parent: this,
@@ -164,5 +171,15 @@ class PerformanceTimer {
     _ownStopwatch.stop();
 
     parent?._ownStopwatch.start();
+  }
+
+  @protected
+  String nextId() {
+    if (isRoot) {
+      _maxId++;
+      return _maxId.toString();
+    } else {
+      return parent!.nextId();
+    }
   }
 }

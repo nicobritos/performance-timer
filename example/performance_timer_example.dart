@@ -43,14 +43,13 @@ Future<void> main() async {
   // ++ calculationB2 - tot: 356ms - own: 356ms - B2
   // -----------
   final stringSerializer = const PerformanceTimerSerializerString();
-  print(await stringSerializer.serialize(rootTimer));
+  print(stringSerializer.serialize(rootTimer));
 
   // Export trace information as Trace Event Format, which is a standard
   // that's supported by many tracer analyzers, such as Google's Perfetto:
   // https://ui.perfetto.dev/
   final traceEventSerializer = const PerformanceTimerSerializerTraceEvent();
-  final serializedTrace =
-      jsonEncode(await traceEventSerializer.serialize(rootTimer));
+  final serializedTrace = jsonEncode(traceEventSerializer.serialize(rootTimer));
   final file = File('./example_trace.json');
   file.openWrite();
   await file.writeAsString(serializedTrace);

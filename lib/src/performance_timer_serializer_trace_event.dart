@@ -1,10 +1,7 @@
-import 'dart:async';
-
 import 'package:performance_timer/src/performance_timer.dart';
 import 'package:performance_timer/src/performance_timer_serializer.dart';
 
 typedef TraceEvent = Map<String, dynamic>;
-typedef TraceEvents = List<TraceEvent>;
 
 /// Serializes a root [PerformanceTimer] to [TraceEvents] format, making it
 /// possible to analyze it using tools like Google's Perfetto.
@@ -14,31 +11,36 @@ typedef TraceEvents = List<TraceEvent>;
 /// This allows you to analyze the traces with several tools like
 /// https://ui.perfetto.dev/
 class PerformanceTimerSerializerTraceEvent
-    extends PerformanceTimerSerializer<TraceEvents> {
+    extends PerformanceTimerSerializer<TraceEvent> {
   const PerformanceTimerSerializerTraceEvent();
 
   @override
-  FutureOr<TraceEvents> serialize(PerformanceTimer timer) {
+  TraceEvent serialize(PerformanceTimer timer) {
     if (!timer.isRoot) {
       throw StateError('The timer to serialize should be the parent');
     }
 
-    final TraceEvents events = [];
+    final TraceEvent data = {};
 
-    _serializeTraceEvents(timer, events);
+    data['traceEvents'] = _serializeTraceEvents(timer);
+    data['stackFrames'] = _serializeStackFrames(timer);
+
+    return data;
+  }
+
+  List<Map<String, dynamic>> _serializeTraceEvents(PerformanceTimer timer) {
+    final events = <Map<String, dynamic>>[];
+
+    events.add(_serializeTraceEvent(timer));
+
+    for (final child in timer.children) {
+      events.addAll(_serializeTraceEvents(child));
+    }
 
     return events;
   }
 
-  void _serializeTraceEvents(PerformanceTimer timer, TraceEvents events) {
-    events.add(_serializeTraceEvent(timer));
-
-    for (final child in timer.children) {
-      _serializeTraceEvents(child, events);
-    }
-  }
-
-  TraceEvent _serializeTraceEvent(PerformanceTimer timer) {
+  Map<String, dynamic> _serializeTraceEvent(PerformanceTimer timer) {
     final data = {
       "name": timer.name,
       "ph": "X",
@@ -49,7 +51,8 @@ class PerformanceTimerSerializerTraceEvent
       "args": {
         ...timer.tags,
         "ownTimeMs": timer.ownDuration.inMilliseconds,
-      }
+      },
+      "sf": timer.id
     };
 
     if (timer.category != null) {
@@ -57,5 +60,29 @@ class PerformanceTimerSerializerTraceEvent
     }
 
     return data;
+  }
+
+  Map<String, dynamic> _serializeStackFrames(PerformanceTimer timer) {
+    final stacks = <String, dynamic>{};
+
+    stacks[timer.id] = _serializeStackFrame(timer);
+
+    for (final child in timer.children) {
+      stacks.addAll(_serializeStackFrames(child));
+    }
+
+    return stacks;
+  }
+
+  Map<String, dynamic> _serializeStackFrame(PerformanceTimer timer) {
+    final Map<String, dynamic> data = {"name": timer.name};
+    if (timer.category != null) {
+      data["category"] = timer.category;
+    }
+    if (timer.parent != null) {
+      data["parent"] = timer.parent!.id;
+    }
+
+    return {timer.id: data};
   }
 }
