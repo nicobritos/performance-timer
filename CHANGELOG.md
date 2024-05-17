@@ -1,3 +1,8 @@
+## 1.1.0 - 2024-05-16
+### Added
+- stackframes to trace event format
+- on finished callback
+
 ## 1.0.5 - 2024-04-09
 ### Fixed
 - measure callback return type
