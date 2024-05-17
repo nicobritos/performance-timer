@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:duration/duration.dart' show DurationTersity;
 import 'package:duration/duration.dart' as duration_helper show prettyDuration;
 import 'package:performance_timer/src/performance_timer.dart';
@@ -11,7 +9,7 @@ class PerformanceTimerSerializerString
   const PerformanceTimerSerializerString();
 
   @override
-  FutureOr<String> serialize(PerformanceTimer timer) {
+  String serialize(PerformanceTimer timer) {
     if (!timer.isRoot) {
       throw StateError('The timer to serialize should be the parent');
     }

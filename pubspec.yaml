@@ -1,6 +1,6 @@
 name: performance_timer
 description: A timer and utils to count time spent on methods and calculations
-version: 1.0.5
+version: 1.1.0
 repository: https://github.com/nicobritos/performance-timer
 
 environment:
@@ -9,6 +9,7 @@ environment:
 # Add regular dependencies here.
 dependencies:
   duration: ^3.0.13
+  meta: ^1.7.0
 
 dev_dependencies:
   lints: ^3.0.0

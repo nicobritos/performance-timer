@@ -1,6 +1,9 @@
 import 'dart:collection';
 
+import 'package:meta/meta.dart';
+
 typedef MeasurableCallback<T> = T Function(PerformanceTimer timer);
+typedef OnFinishedCallback = void Function(PerformanceTimer timer);
 
 /// Tracks time spent in method calls, including bot total and own time
 /// spent.
@@ -31,6 +34,9 @@ class PerformanceTimer {
   final DateTime startAt = DateTime.now();
   final Stopwatch _ownStopwatch = Stopwatch();
   final Stopwatch _realStopwatch = Stopwatch();
+  final OnFinishedCallback? _onFinished;
+  final String id;
+  int _maxId = 0;
 
   /// This is used in TraceEventFormat, but for now is zero.
   ///
@@ -59,9 +65,12 @@ class PerformanceTimer {
   PerformanceTimer._({
     required this.name,
     required this.category,
+    required this.id,
     required Map<String, String?> tags,
     this.parent,
-  }) : _tags = tags {
+    OnFinishedCallback? onFinished,
+  })  : _tags = tags,
+        _onFinished = onFinished {
     threadId = 0;
     root = parent?.root ?? this;
 
@@ -77,11 +86,14 @@ class PerformanceTimer {
     required String name,
     String? category,
     Map<String, String>? tags,
+    OnFinishedCallback? onFinished,
   }) {
     return PerformanceTimer._(
       name: name,
+      id: '0',
       category: category,
       tags: Map.of(tags ?? {}),
+      onFinished: onFinished,
     );
   }
 
@@ -116,6 +128,7 @@ class PerformanceTimer {
 
     final newStep = PerformanceTimer._(
       name: name,
+      id: nextId(),
       category: category ?? this.category,
       tags: {},
       parent: this,
@@ -155,14 +168,31 @@ class PerformanceTimer {
 
   /// Stops all stopwatches ([ownDuration] and [realDuration]).
   /// If the timer has a parent, then it also resumes
-  void finish() {
+  void finish({bool failOnStopped = true}) {
     if (!running) {
-      throw StateError('Timer already finished');
+      if (failOnStopped) {
+        throw StateError('Timer already finished');
+      }
+      return;
     }
 
     _realStopwatch.stop();
     _ownStopwatch.stop();
 
     parent?._ownStopwatch.start();
+
+    if (_onFinished != null) {
+      _onFinished(this);
+    }
+  }
+
+  @protected
+  String nextId() {
+    if (isRoot) {
+      _maxId++;
+      return _maxId.toString();
+    } else {
+      return parent!.nextId();
+    }
   }
 }
