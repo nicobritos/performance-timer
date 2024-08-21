@@ -32,11 +32,16 @@ class PerformanceTimer {
   final PerformanceTimer? parent;
   late final PerformanceTimer root;
   final DateTime startAt = DateTime.now();
+  final Duration relativeStartAt;
   final Stopwatch _ownStopwatch = Stopwatch();
   final Stopwatch _realStopwatch = Stopwatch();
   final OnFinishedCallback? _onFinished;
   final String id;
+  bool finished = false;
+  bool success = false;
+  bool discarded = false;
   int _maxId = 0;
+  bool _countingOwnTimer = true;
 
   /// This is used in TraceEventFormat, but for now is zero.
   ///
@@ -45,11 +50,6 @@ class PerformanceTimer {
   /// using hashcode.
   late final int threadId;
 
-  /// Moment which this timer has started, since root timer has been created.
-  ///
-  /// If this is the root timer, then time elapsed is zero.
-  Duration get relativeStartAt =>
-      isRoot ? Duration.zero : startAt.difference(root.startAt);
   bool get isRoot => root == this;
 
   /// Time elapsed from start of this timer, until [finish] is called.
@@ -58,7 +58,8 @@ class PerformanceTimer {
   /// Time elapsed from start of this timer, without considering time
   /// spent in children timers.
   Duration get ownDuration => _ownStopwatch.elapsed;
-  bool get running => _realStopwatch.isRunning;
+
+  bool get running => !finished;
   List<PerformanceTimer> get children => UnmodifiableListView(_children);
   Map<String, String?> get tags => UnmodifiableMapView(_tags);
 
@@ -67,6 +68,7 @@ class PerformanceTimer {
     required this.category,
     required this.id,
     required Map<String, String?> tags,
+    required this.relativeStartAt,
     this.parent,
     OnFinishedCallback? onFinished,
   })  : _tags = tags,
@@ -94,6 +96,7 @@ class PerformanceTimer {
       category: category,
       tags: Map.of(tags ?? {}),
       onFinished: onFinished,
+      relativeStartAt: Duration.zero,
     );
   }
 
@@ -124,7 +127,7 @@ class PerformanceTimer {
     }
 
     // Don't count time spent on children as own
-    _ownStopwatch.stop();
+    pauseOwnTimer();
 
     final newStep = PerformanceTimer._(
       name: name,
@@ -132,6 +135,7 @@ class PerformanceTimer {
       category: category ?? this.category,
       tags: {},
       parent: this,
+      relativeStartAt: relativeStartAt + realDuration,
     );
     _children.add(newStep);
     return newStep;
@@ -168,7 +172,7 @@ class PerformanceTimer {
 
   /// Stops all stopwatches ([ownDuration] and [realDuration]).
   /// If the timer has a parent, then it also resumes
-  void finish({bool failOnStopped = true}) {
+  void finish({bool success = true, bool discarded = false, bool failOnStopped = true}) {
     if (!running) {
       if (failOnStopped) {
         throw StateError('Timer already finished');
@@ -176,13 +180,46 @@ class PerformanceTimer {
       return;
     }
 
-    _realStopwatch.stop();
-    _ownStopwatch.stop();
+    pause();
+    finished = true;
 
-    parent?._ownStopwatch.start();
+    if (parent != null) {
+      parent!.startOwnTimer();
+    } else {
+      this.success = success;
+      this.discarded = discarded;
+    }
 
     if (_onFinished != null) {
       _onFinished(this);
+    }
+  }
+
+  void pause() {
+    if (!running) {
+      return;
+    }
+
+    _realStopwatch.stop();
+    _ownStopwatch.stop();
+
+    for (final child in children) {
+      child.pause();
+    }
+  }
+
+  void resume() {
+    if (!running) {
+      return;
+    }
+
+    _realStopwatch.start();
+    if (_countingOwnTimer) {
+      _ownStopwatch.start();
+    }
+
+    for (final child in children) {
+      child.resume();
     }
   }
 
@@ -194,5 +231,17 @@ class PerformanceTimer {
     } else {
       return parent!.nextId();
     }
+  }
+
+  @protected
+  void startOwnTimer() {
+    _countingOwnTimer = true;
+    _ownStopwatch.start();
+  }
+
+  @protected
+  void pauseOwnTimer() {
+    _countingOwnTimer = false;
+    _ownStopwatch.stop();
   }
 }
