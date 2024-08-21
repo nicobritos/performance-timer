@@ -1,3 +1,9 @@
+## 1.2.0 - 2024-08-21
+### Added
+- OTEL exporter
+- OTEL serializer
+- Pause/Resume timers
+
 ## 1.1.0 - 2024-05-16
 ### Added
 - stackframes to trace event format
