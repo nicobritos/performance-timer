@@ -1,3 +1,8 @@
+## 1.2.1 - 2024-08-23
+### Added
+- Pause and resume OTEL exporter
+- Headers for OTEL exporter (ex. authorization)
+
 ## 1.2.0 - 2024-08-21
 ### Added
 - OTEL exporter

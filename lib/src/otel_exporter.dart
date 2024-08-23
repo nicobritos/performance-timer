@@ -17,7 +17,9 @@ class OtelExporter {
   final PerformanceTimerSerializerOtel serializer;
   final Queue<PerformanceTimer> _queue = Queue();
   final http.Client _client = http.Client();
-  late final Timer _timer;
+  final Map<String, String> _headers = {};
+  Timer? _timer;
+  bool _active = false;
 
   OtelExporter({
     required this.endpoint,
@@ -29,8 +31,30 @@ class OtelExporter {
     this.maxQueueSize = 20,
     this.sendFactor = 1.0,
     this.serializer = const PerformanceTimerSerializerOtel(),
+    bool startPaused = false,
   }) {
+    if (!startPaused) {
+      resume();
+    }
+  }
+
+  void addHeader(String key, String value) {
+    _headers[key] = value;
+  }
+
+  void removeHeader(String key) {
+    _headers.remove(key);
+  }
+
+  void resume() {
+    _active = true;
     _timer = Timer.periodic(exportEvery, (_) => _export());
+  }
+
+  void pause() {
+    _active = false;
+    _timer?.cancel();
+    _timer = null;
   }
 
   void add(PerformanceTimer timer) {
@@ -38,7 +62,7 @@ class OtelExporter {
   }
 
   void dispose() {
-    _timer.cancel();
+    _timer?.cancel();
     _client.close();
   }
 
@@ -61,27 +85,33 @@ class OtelExporter {
   }
 
   Future<void> _send(List<PerformanceTimer> timers) async {
-    final timerBatches = quiver.partition(timers, maxGroupSize).map((e) => serializer.serializeGroup(e)).toList();
+    final timerBatches = quiver.partition(timers, maxGroupSize).toList();
+    final serializedBatches = timerBatches.map((e) => serializer.serializeGroup(e)).toList();
+    final unsentTimers = <PerformanceTimer>[];
 
-    for (final batch in timerBatches) {
+    for (int i = 0; i < serializedBatches.length; i++) {
+      final batch = serializedBatches[i];
       final body = json.encode(await batch);
 
-      bool send = false;
+      bool sent = false;
       int sentTimes = 0;
-      while (!send && sentTimes < maxAttempts) {
+      while (!sent && sentTimes < maxAttempts && _active) {
         try {
           sentTimes++;
 
           final r = await _client
               .post(
                 endpoint,
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                  ..._headers,
+                  'Content-Type': 'application/json',
+                },
                 body: body,
               )
               .timeout(timeout);
 
           if (r.statusCode >= 200 && r.statusCode < 300) {
-            send = true;
+            sent = true;
           } else {
             await Future.delayed(retryInterval);
           }
@@ -89,6 +119,13 @@ class OtelExporter {
           await Future.delayed(retryInterval);
         }
       }
+
+      // Timers not processed due to not exporter not active
+      if (!sent && !_active) {
+        unsentTimers.addAll(timerBatches[i]);
+      }
     }
+
+    _queue.addAll(unsentTimers);
   }
 }
