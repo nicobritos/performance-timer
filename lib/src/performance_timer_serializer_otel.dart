@@ -79,7 +79,7 @@ class PerformanceTimerSerializerOtel extends PerformanceTimerSerializer<Map<Stri
     };
 
     for (final timer in group) {
-      final traceId = _generateTraceId();
+      final traceId = _generateTraceId(timer);
       _serializeTimer(timer, spans, traceId);
     }
 
@@ -115,7 +115,16 @@ class PerformanceTimerSerializerOtel extends PerformanceTimerSerializer<Map<Stri
     }
   }
 
-  String _generateTraceId() {
+  String _generateTraceId(PerformanceTimer timer) {
+    if (timer.parent == null) {
+      final id = timer.id.replaceAll('-', '');
+      final isUuid = id.length == 32 &&
+          id.codeUnits.every((element) => element >= 48 && element <= 57 || element >= 65 && element <= 70);
+      if (isUuid) {
+        return id;
+      }
+    }
+
     final random = Random.secure();
     final bytes = List<int>.generate(16, (_) => random.nextInt(256));
     return _bytesToHex(bytes);
