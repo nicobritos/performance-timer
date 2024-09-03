@@ -86,13 +86,14 @@ class PerformanceTimer {
   /// A new map is created based on [tags].
   factory PerformanceTimer({
     required String name,
+    String id = '0',
     String? category,
     Map<String, String>? tags,
     OnFinishedCallback? onFinished,
   }) {
     return PerformanceTimer._(
       name: name,
-      id: '0',
+      id: id,
       category: category,
       tags: Map.of(tags ?? {}),
       onFinished: onFinished,

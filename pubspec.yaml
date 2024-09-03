@@ -1,6 +1,6 @@
 name: performance_timer
 description: A timer and utils to count time spent on methods and calculations
-version: 1.2.1
+version: 1.2.2
 repository: https://github.com/nicobritos/performance-timer
 
 environment:

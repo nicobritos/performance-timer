@@ -1,3 +1,7 @@
+## 1.2.2 - 2024-09-03
+### Added
+- Use timer id as trace id if it's a valid uuid
+
 ## 1.2.1 - 2024-08-23
 ### Added
 - Pause and resume OTEL exporter
