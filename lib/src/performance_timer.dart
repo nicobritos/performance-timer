@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:meta/meta.dart';
+import 'package:performance_timer/src/utils.dart';
 
 typedef MeasurableCallback<T> = T Function(PerformanceTimer timer);
 typedef OnFinishedCallback = void Function(PerformanceTimer timer);
@@ -40,7 +41,6 @@ class PerformanceTimer {
   bool finished = false;
   bool success = false;
   bool discarded = false;
-  int _maxId = 0;
   bool _countingOwnTimer = true;
 
   /// This is used in TraceEventFormat, but for now is zero.
@@ -86,14 +86,13 @@ class PerformanceTimer {
   /// A new map is created based on [tags].
   factory PerformanceTimer({
     required String name,
-    String id = '0',
     String? category,
     Map<String, String>? tags,
     OnFinishedCallback? onFinished,
   }) {
     return PerformanceTimer._(
       name: name,
-      id: id,
+      id: Utils.generateHexId(16),
       category: category,
       tags: Map.of(tags ?? {}),
       onFinished: onFinished,
@@ -132,7 +131,7 @@ class PerformanceTimer {
 
     final newStep = PerformanceTimer._(
       name: name,
-      id: nextId(),
+      id: Utils.generateHexId(8),
       category: category ?? this.category,
       tags: {},
       parent: this,
@@ -173,7 +172,10 @@ class PerformanceTimer {
 
   /// Stops all stopwatches ([ownDuration] and [realDuration]).
   /// If the timer has a parent, then it also resumes
-  void finish({bool success = true, bool discarded = false, bool failOnStopped = true}) {
+  void finish(
+      {bool success = true,
+      bool discarded = false,
+      bool failOnStopped = true}) {
     if (!running) {
       if (failOnStopped) {
         throw StateError('Timer already finished');
@@ -221,16 +223,6 @@ class PerformanceTimer {
 
     for (final child in children) {
       child.resume();
-    }
-  }
-
-  @protected
-  String nextId() {
-    if (isRoot) {
-      _maxId++;
-      return _maxId.toString();
-    } else {
-      return parent!.nextId();
     }
   }
 
