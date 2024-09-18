@@ -1,3 +1,7 @@
+## 2.0.0-alpha.1 - 2024-09-17
+### Changed
+- Automatically generate IDs in OTEL format
+
 ## 1.2.2 - 2024-09-03
 ### Added
 - Use timer id as trace id if it's a valid uuid

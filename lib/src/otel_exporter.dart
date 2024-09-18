@@ -86,7 +86,8 @@ class OtelExporter {
 
   Future<void> _send(List<PerformanceTimer> timers) async {
     final timerBatches = quiver.partition(timers, maxGroupSize).toList();
-    final serializedBatches = timerBatches.map((e) => serializer.serializeGroup(e)).toList();
+    final serializedBatches =
+        timerBatches.map((e) => serializer.serializeGroup(e)).toList();
     final unsentTimers = <PerformanceTimer>[];
 
     for (int i = 0; i < serializedBatches.length; i++) {

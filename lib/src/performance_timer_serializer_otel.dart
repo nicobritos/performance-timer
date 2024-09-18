@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:fixnum/fixnum.dart';
 import 'package:meta/meta.dart';
@@ -13,7 +12,8 @@ import 'package:performance_timer/src/performance_timer_serializer.dart';
 ///
 /// This allows you to analyze the traces with several tools like
 /// https://ui.perfetto.dev/
-class PerformanceTimerSerializerOtel extends PerformanceTimerSerializer<Map<String, dynamic>> {
+class PerformanceTimerSerializerOtel
+    extends PerformanceTimerSerializer<Map<String, dynamic>> {
   const PerformanceTimerSerializerOtel();
 
   @override
@@ -39,7 +39,8 @@ class PerformanceTimerSerializerOtel extends PerformanceTimerSerializer<Map<Stri
   }
 
   @protected
-  List<Map<String, dynamic>> attributesOfTimer(PerformanceTimer timer, {required bool isRoot}) {
+  List<Map<String, dynamic>> attributesOfTimer(PerformanceTimer timer,
+      {required bool isRoot}) {
     return [];
   }
 
@@ -72,7 +73,11 @@ class PerformanceTimerSerializerOtel extends PerformanceTimerSerializer<Map<Stri
       },
       'scopeSpans': [
         {
-          'scope': {'name': group.first.scopeName, 'version': group.first.versionName, 'attributes': []},
+          'scope': {
+            'name': group.first.scopeName,
+            'version': group.first.versionName,
+            'attributes': []
+          },
           'spans': spans,
         }
       ]
@@ -92,7 +97,7 @@ class PerformanceTimerSerializerOtel extends PerformanceTimerSerializer<Map<Stri
     String traceId, [
     String? parentSpanId,
   ]) {
-    final spanId = _generateSpanId();
+    final spanId = _generateSpanId(timer);
 
     final isRoot = parentSpanId == null;
     final attributes = attributesOfTimer(timer, isRoot: isRoot);
@@ -107,7 +112,10 @@ class PerformanceTimerSerializerOtel extends PerformanceTimerSerializer<Map<Stri
       if (!isRoot) 'parentSpanId': parentSpanId,
       if (attributes.isNotEmpty) 'attributes': attributes,
       'startTimeUnixNano': timer.startAt.nanoSecondsSinceEpoch.toString(),
-      'endTimeUnixNano': timer.startAt.add(timer.realDuration).nanoSecondsSinceEpoch.toString(),
+      'endTimeUnixNano': timer.startAt
+          .add(timer.realDuration)
+          .nanoSecondsSinceEpoch
+          .toString(),
     });
 
     for (final child in timer.children) {
@@ -116,32 +124,11 @@ class PerformanceTimerSerializerOtel extends PerformanceTimerSerializer<Map<Stri
   }
 
   String _generateTraceId(PerformanceTimer timer) {
-    if (timer.parent == null) {
-      final id = timer.id.replaceAll('-', '');
-      final isUuid = id.length == 32 &&
-          id.codeUnits.every((element) => element >= 48 && element <= 57 || element >= 65 && element <= 70);
-      if (isUuid) {
-        return id;
-      }
-    }
-
-    final random = Random.secure();
-    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
-    return _bytesToHex(bytes);
+    return timer.root.id;
   }
 
-  String _generateSpanId() {
-    final random = Random.secure();
-    final bytes = List<int>.generate(8, (_) => random.nextInt(256));
-    return _bytesToHex(bytes);
-  }
-
-  String _bytesToHex(List<int> bytes) {
-    final buffer = StringBuffer();
-    for (var byte in bytes) {
-      buffer.write(byte.toRadixString(16).padLeft(2, '0'));
-    }
-    return buffer.toString();
+  String _generateSpanId(PerformanceTimer timer) {
+    return timer.id.substring(0, 16);
   }
 }
 
