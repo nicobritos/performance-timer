@@ -23,7 +23,7 @@ Future<void> main() async {
 
   final result = await rootTimer.measure('measure', (child) async {
     await Future.delayed(const Duration(milliseconds: 100));
-    return child.measure('data', (_) => 1);
+    return child.measure('data', (_) async => 1);
   });
 
   // 1

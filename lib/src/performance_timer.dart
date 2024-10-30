@@ -1,9 +1,10 @@
 import 'dart:collection';
 
 import 'package:meta/meta.dart';
+import 'package:performance_timer/src/performance_timer_exception.dart';
 import 'package:performance_timer/src/utils.dart';
 
-typedef MeasurableCallback<T> = T Function(PerformanceTimer timer);
+typedef MeasurableCallback<T> = Future<T> Function(PerformanceTimer timer);
 typedef OnFinishedCallback = void Function(PerformanceTimer timer);
 
 /// Tracks time spent in method calls, including bot total and own time
@@ -38,8 +39,9 @@ class PerformanceTimer {
   final Stopwatch _realStopwatch = Stopwatch();
   final OnFinishedCallback? _onFinished;
   final String id;
+  String? errorMessage;
+  String? errorType;
   bool finished = false;
-  bool success = false;
   bool discarded = false;
   bool _countingOwnTimer = true;
 
@@ -62,6 +64,7 @@ class PerformanceTimer {
   bool get running => !finished;
   List<PerformanceTimer> get children => UnmodifiableListView(_children);
   Map<String, String?> get tags => UnmodifiableMapView(_tags);
+  bool get success => errorMessage == null && errorType == null;
 
   PerformanceTimer._({
     required this.name,
@@ -104,16 +107,16 @@ class PerformanceTimer {
   /// or removes it if [value] is null only on the root timer
   /// (or itself, if it is the root timer).
   void setTag(String key, [String? value]) {
-    if (parent != null) {
-      parent!.setTag(key, value);
-      return;
-    }
-
     if (value == null) {
       _tags.remove(key);
     } else {
       _tags[key] = value;
     }
+  }
+
+  void setError({String? type, String? message}) {
+    errorType = type;
+    errorMessage = message;
   }
 
   /// Creates a new child timer with [name] and stores it in [children].
@@ -144,27 +147,27 @@ class PerformanceTimer {
   /// Creates a new child timer as [child] to measure time spent in the
   /// [callback]. This child timer is automatically finished when the
   /// [callback] completes or fails. If it fails, it rethrows the error.
-  T measure<T>(
+  Future<T> measure<T>(
     String name,
     MeasurableCallback<T> callback, {
     String? category,
-  }) {
+  }) async {
     final childTimer = child(name, category: category);
 
     try {
-      final result = callback(childTimer);
-
-      if (result is Future) {
-        return result.whenComplete(() {
-          childTimer.finish();
-        }) as T;
-      } else {
-        childTimer.finish();
-        return result;
-      }
-    } catch (_) {
+      final result = await callback(childTimer);
+      childTimer.finish();
+      return result;
+    } catch (e) {
       if (childTimer.running) {
-        childTimer.finish();
+        if (e is PerformanceTimerException) {
+          childTimer.finish(
+            errorType: e.type,
+            errorMessage: e.message,
+          );
+        } else {
+          childTimer.finish(errorMessage: e.toString());
+        }
       }
       rethrow;
     }
@@ -173,7 +176,8 @@ class PerformanceTimer {
   /// Stops all stopwatches ([ownDuration] and [realDuration]).
   /// If the timer has a parent, then it also resumes
   void finish(
-      {bool success = true,
+      {String? errorType,
+      String? errorMessage,
       bool discarded = false,
       bool failOnStopped = true}) {
     if (!running) {
@@ -189,9 +193,11 @@ class PerformanceTimer {
     if (parent != null) {
       parent!.startOwnTimer();
     } else {
-      this.success = success;
       this.discarded = discarded;
     }
+
+    this.errorMessage ??= errorMessage;
+    this.errorType ??= errorType;
 
     if (_onFinished != null) {
       _onFinished(this);
