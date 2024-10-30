@@ -1,4 +1,5 @@
 import 'package:performance_timer/performance_timer.dart';
+import 'package:performance_timer/src/performance_timer_exception.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -155,16 +156,20 @@ void main() {
       expect(child.root, equals(root));
     });
 
-    test('should set tag in root', () {
+    test('should set tag in itself', () {
       child.setTag('key', 'value');
-      expect(child.tags, isEmpty);
-      expect(root.tags, equals({'key': 'value'}));
+      expect(child.tags, isNotEmpty);
+      expect(root.tags, isEmpty);
+      expect(child.tags, equals({'key': 'value'}));
     });
 
-    test('should delete tag in root', () {
+    test('should delete tag in itself', () {
+      root.setTag('key', 'value');
       child.setTag('key', 'value');
       child.setTag('key');
-      expect(root.tags, isEmpty);
+      expect(child.tags, isEmpty);
+      expect(root.tags, isNotEmpty);
+      expect(root.tags, equals({'key': 'value'}));
     });
 
     test('should stop stopwatches when finished', () async {
@@ -194,20 +199,20 @@ void main() {
       root = PerformanceTimer(name: 'root');
     });
 
-    test('should call function', () {
+    test('should call function', () async {
       var called = false;
 
-      root.measure('measure', (child) {
+      await root.measure('measure', (child) async {
         called = true;
       });
 
       expect(called, isTrue);
     });
 
-    test('should finish timer with sync function', () {
+    test('should finish timer with sync function', () async {
       PerformanceTimer? childTimer;
 
-      root.measure('measure', (child) {
+      await root.measure('measure', (child) async {
         childTimer = child;
       });
 
@@ -215,11 +220,11 @@ void main() {
       expect(childTimer!.running, isFalse);
     });
 
-    test('should finish timer with sync function if error', () {
+    test('should finish timer with sync function if error', () async {
       PerformanceTimer? childTimer;
 
       try {
-        root.measure('measure', (child) {
+        await root.measure('measure', (child) async {
           childTimer = child;
           throw Exception();
         });
@@ -229,9 +234,9 @@ void main() {
       expect(childTimer!.running, isFalse);
     });
 
-    test('should rethrow error with sync function', () {
+    test('should rethrow error with sync function', () async {
       expect(
-        () => root.measure('measure', (_) {
+        () => root.measure('measure', (_) async {
           throw Exception();
         }),
         throwsA(isA<Exception>()),
@@ -267,6 +272,68 @@ void main() {
       expect(childTimer!.ownDuration.inMilliseconds, greaterThanOrEqualTo(150));
     });
 
+    test('should set error message on generic exceptions as toString',
+        () async {
+      PerformanceTimer? childTimer;
+
+      try {
+        await root.measure('measure', (child) async {
+          childTimer = child;
+          throw _CustomException('message');
+        });
+      } catch (_) {}
+
+      expect(childTimer!.errorMessage, equals('message'));
+      expect(childTimer!.errorType, isNull);
+      expect(childTimer!.success, isFalse);
+    });
+
+    test('should set error message and type on PerformanceTimerException',
+        () async {
+      PerformanceTimer? childTimer;
+
+      try {
+        await root.measure('measure', (child) async {
+          childTimer = child;
+          throw PerformanceTimerException(message: 'message', type: 'type');
+        });
+      } catch (_) {}
+
+      expect(childTimer!.errorMessage, equals('message'));
+      expect(childTimer!.errorType, equals('type'));
+      expect(childTimer!.success, isFalse);
+    });
+
+    test('should set error message on PerformanceTimerException', () async {
+      PerformanceTimer? childTimer;
+
+      try {
+        await root.measure('measure', (child) async {
+          childTimer = child;
+          throw PerformanceTimerException.message('message');
+        });
+      } catch (_) {}
+
+      expect(childTimer!.errorMessage, equals('message'));
+      expect(childTimer!.errorType, isNull);
+      expect(childTimer!.success, isFalse);
+    });
+
+    test('should set error type on PerformanceTimerException', () async {
+      PerformanceTimer? childTimer;
+
+      try {
+        await root.measure('measure', (child) async {
+          childTimer = child;
+          throw PerformanceTimerException.type('type');
+        });
+      } catch (_) {}
+
+      expect(childTimer!.errorMessage, isNull);
+      expect(childTimer!.errorType, equals('type'));
+      expect(childTimer!.success, isFalse);
+    });
+
     test('should rethrow error with async function', () async {
       expect(
         () async => await root.measure('measure', (_) async {
@@ -294,17 +361,14 @@ void main() {
     test('should have root', () {
       expect(childOfChild.root, equals(root));
     });
-
-    test('should set tag in root', () {
-      childOfChild.setTag('key', 'value');
-      expect(childOfChild.tags, isEmpty);
-      expect(root.tags, equals({'key': 'value'}));
-    });
-
-    test('should delete tag in root', () {
-      childOfChild.setTag('key', 'value');
-      childOfChild.setTag('key');
-      expect(root.tags, isEmpty);
-    });
   });
+}
+
+class _CustomException {
+  final String message;
+
+  _CustomException(this.message);
+
+  @override
+  String toString() => message;
 }

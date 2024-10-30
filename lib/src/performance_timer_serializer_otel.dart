@@ -41,7 +41,18 @@ class PerformanceTimerSerializerOtel
   @protected
   List<Map<String, dynamic>> attributesOfTimer(PerformanceTimer timer,
       {required bool isRoot}) {
-    return [];
+    return [
+      if (timer.errorMessage != null)
+        {
+          'key': 'exception.message',
+          'value': {'stringValue': timer.errorMessage!},
+        },
+      if (timer.errorType != null)
+        {
+          'key': 'exception.type',
+          'value': {'stringValue': timer.errorType!},
+        }
+    ];
   }
 
   @protected
