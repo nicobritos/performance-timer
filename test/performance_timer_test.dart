@@ -362,6 +362,90 @@ void main() {
       expect(childOfChild.root, equals(root));
     });
   });
+
+  group('pause and resume', () {
+    late PerformanceTimer timer;
+    setUp(() {
+      timer = PerformanceTimer(name: 'root');
+    });
+
+    test('should pause timer', () async {
+      timer.pause();
+
+      final realDuration1 = timer.realDuration;
+      final ownDuration1 = timer.ownDuration;
+      await Future.delayed(const Duration(milliseconds: 50));
+      final realDuration2 = timer.realDuration;
+      final ownDuration2 = timer.ownDuration;
+
+      expect(realDuration1, equals(realDuration2));
+      expect(ownDuration1, equals(ownDuration2));
+    });
+
+    test('should resume timer', () async {
+      timer.pause();
+      timer.resume();
+
+      final realDuration1 = timer.realDuration;
+      final ownDuration1 = timer.ownDuration;
+      await Future.delayed(const Duration(milliseconds: 50));
+      final realDuration2 = timer.realDuration;
+      final ownDuration2 = timer.ownDuration;
+
+      expect(realDuration1, lessThan(realDuration2));
+      expect(ownDuration1, lessThan(ownDuration2));
+    });
+
+    test('should pause child timer', () async {
+      final child = timer.child('child');
+
+      timer.pause();
+
+      final realDuration1 = timer.realDuration;
+      final ownDuration1 = timer.ownDuration;
+      final childRealDuration1 = child.realDuration;
+      final childOwnDuration1 = child.ownDuration;
+      await Future.delayed(const Duration(milliseconds: 50));
+      final realDuration2 = timer.realDuration;
+      final ownDuration2 = timer.ownDuration;
+      final childRealDuration2 = child.realDuration;
+      final childOwnDuration2 = child.ownDuration;
+
+      expect(realDuration1, equals(realDuration2));
+      expect(ownDuration1, equals(ownDuration2));
+
+      expect(childRealDuration1, equals(childRealDuration2));
+      expect(childOwnDuration1, equals(childOwnDuration2));
+    });
+
+    test('child timer should start paused', () async {
+      timer.pause();
+
+      final child = timer.child('child');
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(child.relativeStartAt, equals(timer.realDuration));
+      expect(child.realDuration, equals(Duration.zero));
+      expect(child.ownDuration, equals(Duration.zero));
+    });
+
+    test('finishing a child should not resume parent', () async {
+      final child = timer.child('child');
+      timer.pause();
+
+      child.finish();
+
+      final realDuration1 = timer.realDuration;
+      final ownDuration1 = timer.ownDuration;
+      await Future.delayed(const Duration(milliseconds: 50));
+      final realDuration2 = timer.realDuration;
+      final ownDuration2 = timer.ownDuration;
+
+      expect(realDuration1, equals(realDuration2));
+      expect(ownDuration1, equals(ownDuration2));
+    });
+  });
 }
 
 class _CustomException {

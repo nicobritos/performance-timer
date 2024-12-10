@@ -44,6 +44,7 @@ class PerformanceTimer {
   bool finished = false;
   bool discarded = false;
   bool _countingOwnTimer = true;
+  bool _paused = false;
 
   /// This is used in TraceEventFormat, but for now is zero.
   ///
@@ -74,13 +75,18 @@ class PerformanceTimer {
     required this.relativeStartAt,
     this.parent,
     OnFinishedCallback? onFinished,
+    bool paused = false,
   })  : _tags = tags,
         _onFinished = onFinished {
     threadId = 0;
     root = parent?.root ?? this;
 
-    _realStopwatch.start();
-    _ownStopwatch.start();
+    _paused = paused;
+
+    if (!paused) {
+      _realStopwatch.start();
+      _ownStopwatch.start();
+    }
   }
 
   /// Creates a timer with [name], [category] and [tags].
@@ -139,6 +145,7 @@ class PerformanceTimer {
       tags: {},
       parent: this,
       relativeStartAt: relativeStartAt + realDuration,
+      paused: _paused,
     );
     _children.add(newStep);
     return newStep;
@@ -211,6 +218,7 @@ class PerformanceTimer {
 
     _realStopwatch.stop();
     _ownStopwatch.stop();
+    _paused = true;
 
     for (final child in children) {
       child.pause();
@@ -222,6 +230,7 @@ class PerformanceTimer {
       return;
     }
 
+    _paused = false;
     _realStopwatch.start();
     if (_countingOwnTimer) {
       _ownStopwatch.start();
@@ -235,7 +244,10 @@ class PerformanceTimer {
   @protected
   void startOwnTimer() {
     _countingOwnTimer = true;
-    _ownStopwatch.start();
+
+    if (!_paused) {
+      _ownStopwatch.start();
+    }
   }
 
   @protected
