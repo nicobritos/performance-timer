@@ -1,3 +1,7 @@
+## 3.0.1 - 2024-12-10
+### Fixed
+- Paused timers being resumed when a child timer is finished
+
 ## 3.0.0 - 2024-10-30
 ### Changed
 - `measure` now always returns a Future
