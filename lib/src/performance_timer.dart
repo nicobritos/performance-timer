@@ -4,8 +4,10 @@ import 'package:meta/meta.dart';
 import 'package:performance_timer/src/performance_timer_exception.dart';
 import 'package:performance_timer/src/utils.dart';
 
-typedef MeasurableCallback<T> = Future<T> Function(PerformanceTimer timer);
-typedef OnFinishedCallback = void Function(PerformanceTimer timer);
+typedef MeasurableCallback<R, T> = Future<R> Function(
+    PerformanceTimer<T> timer);
+typedef OnFinishedCallback<T> = void Function(
+    PerformanceTimer<T> timer, T? result);
 
 /// Tracks time spent in method calls, including bot total and own time
 /// spent.
@@ -26,18 +28,18 @@ typedef OnFinishedCallback = void Function(PerformanceTimer timer);
 ///
 /// Also, the [root] timer may have [tags] set for the same purpose.
 /// However, child timers will have this map empty.
-class PerformanceTimer {
+class PerformanceTimer<T> {
   final String name;
   final String? category;
   final Map<String, String?> _tags;
-  final List<PerformanceTimer> _children = [];
-  final PerformanceTimer? parent;
-  late final PerformanceTimer root;
+  final List<PerformanceTimer<T>> _children = [];
+  final PerformanceTimer<T>? parent;
+  late final PerformanceTimer<T> root;
   final DateTime startAt = DateTime.now();
   final Duration relativeStartAt;
   final Stopwatch _ownStopwatch = Stopwatch();
   final Stopwatch _realStopwatch = Stopwatch();
-  final OnFinishedCallback? _onFinished;
+  final OnFinishedCallback<T>? _onFinished;
   final String id;
   String? errorMessage;
   String? errorType;
@@ -74,7 +76,7 @@ class PerformanceTimer {
     required Map<String, String?> tags,
     required this.relativeStartAt,
     this.parent,
-    OnFinishedCallback? onFinished,
+    OnFinishedCallback<T>? onFinished,
     bool paused = false,
   })  : _tags = tags,
         _onFinished = onFinished {
@@ -97,7 +99,7 @@ class PerformanceTimer {
     required String name,
     String? category,
     Map<String, String>? tags,
-    OnFinishedCallback? onFinished,
+    OnFinishedCallback<T>? onFinished,
   }) {
     return PerformanceTimer._(
       name: name,
@@ -130,7 +132,7 @@ class PerformanceTimer {
   /// If [category] is null, then the parent's category is used.
   /// Automatically pauses the [ownDuration] of this timer,
   /// and starts both stopwatches of the created child.
-  PerformanceTimer child(String name, {String? category}) {
+  PerformanceTimer<T> child(String name, {String? category}) {
     if (!running) {
       throw StateError('Timer already finished');
     }
@@ -154,9 +156,9 @@ class PerformanceTimer {
   /// Creates a new child timer as [child] to measure time spent in the
   /// [callback]. This child timer is automatically finished when the
   /// [callback] completes or fails. If it fails, it rethrows the error.
-  Future<T> measure<T>(
+  Future<R> measure<R>(
     String name,
-    MeasurableCallback<T> callback, {
+    MeasurableCallback<R, T> callback, {
     String? category,
   }) async {
     final childTimer = child(name, category: category);
@@ -182,11 +184,13 @@ class PerformanceTimer {
 
   /// Stops all stopwatches ([ownDuration] and [realDuration]).
   /// If the timer has a parent, then it also resumes
-  void finish(
-      {String? errorType,
-      String? errorMessage,
-      bool discarded = false,
-      bool failOnStopped = true}) {
+  void finish({
+    T? result,
+    String? errorType,
+    String? errorMessage,
+    bool discarded = false,
+    bool failOnStopped = true,
+  }) {
     if (!running) {
       if (failOnStopped) {
         throw StateError('Timer already finished');
@@ -207,7 +211,7 @@ class PerformanceTimer {
     this.errorType ??= errorType;
 
     if (_onFinished != null) {
-      _onFinished(this);
+      _onFinished(this, result);
     }
   }
 

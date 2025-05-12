@@ -1,3 +1,7 @@
+## 3.1.0 - 2025-05-12
+### Added
+- Add result param to the on finished callback
+
 ## 3.0.1 - 2024-12-10
 ### Fixed
 - Paused timers being resumed when a child timer is finished
