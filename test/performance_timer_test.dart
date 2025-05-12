@@ -103,8 +103,15 @@ void main() {
 
   group('child timer', () {
     late PerformanceTimer root, child;
+    dynamic result;
     setUp(() async {
-      root = PerformanceTimer(name: 'root', category: 'category');
+      root = PerformanceTimer(
+        name: 'root',
+        category: 'category',
+        onFinished: (t, r) {
+          result = r;
+        },
+      );
       await Future.delayed(const Duration(milliseconds: 10));
       child = root.child('child');
     });
@@ -170,6 +177,12 @@ void main() {
       expect(child.tags, isEmpty);
       expect(root.tags, isNotEmpty);
       expect(root.tags, equals({'key': 'value'}));
+    });
+
+    test('should pass argument on finish', () async {
+      root.finish(result: 'Result');
+
+      expect(result, equals('Result'));
     });
 
     test('should stop stopwatches when finished', () async {
